@@ -31,7 +31,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// ===== RESPONSE INTERCEPTOR =====
+// ===== RESPONSE INTERCEPTOR =====layout
 // Handles expired tokens + unauthorized redirects
 api.interceptors.response.use(
   (response) => response,
