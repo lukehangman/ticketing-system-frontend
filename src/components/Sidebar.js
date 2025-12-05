@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+
 import {
   FiHome,
   FiInbox,
   FiPlusCircle,
   FiUsers,
-  FiBuilding,
+  FiBriefcase,   // ← البديل الصحيح لـ FiBuilding
   FiBarChart2,
   FiUser,
   FiLogOut,
@@ -17,23 +18,21 @@ import {
 
 const Sidebar = ({ isOpen, onClose }) => {
   const pathname = usePathname();
-  const { user, logout, isAdmin, isAgent } = useAuth();
+  const { user, logout } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: FiHome, roles: ['admin', 'agent', 'customer'] },
     { name: 'Tickets', href: '/dashboard/tickets', icon: FiInbox, roles: ['admin', 'agent', 'customer'] },
     { name: 'New Ticket', href: '/dashboard/tickets/new', icon: FiPlusCircle, roles: ['customer'] },
     { name: 'Users', href: '/dashboard/users', icon: FiUsers, roles: ['admin', 'agent'] },
-    { name: 'Companies', href: '/dashboard/companies', icon: FiBuilding, roles: ['admin'] },
+    { name: 'Companies', href: '/dashboard/companies', icon: FiBriefcase, roles: ['admin'] }, // 🔥 هنا التعديل
     { name: 'Analytics', href: '/dashboard/analytics', icon: FiBarChart2, roles: ['admin', 'agent'] },
   ];
 
   const filteredNav = navigation.filter(item => item.roles.includes(user?.role));
 
   const isActive = (href) => {
-    if (href === '/dashboard') {
-      return pathname === href;
-    }
+    if (href === '/dashboard') return pathname === href;
     return pathname?.startsWith(href);
   };
 
@@ -54,6 +53,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         }`}
       >
         <div className="flex flex-col h-full">
+          
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-primary-600">TicketHub</h1>
@@ -70,7 +70,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             {filteredNav.map((item) => {
               const Icon = item.icon;
               const active = isActive(item.href);
-              
+
               return (
                 <Link
                   key={item.name}
@@ -105,7 +105,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <span>Profile</span>
               </Link>
             </div>
-            
+
             <div className="px-4 py-3 bg-gray-50 rounded-lg mb-3">
               <p className="text-sm font-medium text-gray-900">{user?.name}</p>
               <p className="text-xs text-gray-500">{user?.email}</p>
@@ -122,6 +122,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               <span>Logout</span>
             </button>
           </div>
+
         </div>
       </div>
     </>
