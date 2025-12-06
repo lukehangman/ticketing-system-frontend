@@ -53,7 +53,6 @@ export default function NewTicketPage() {
         return;
       }
 
-      // FormData
       const fd = new FormData();
       fd.append('title', formData.title.trim());
       fd.append('description', formData.description.trim());
