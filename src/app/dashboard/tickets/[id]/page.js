@@ -1,104 +1,142 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import api from '../../../../lib/api';
-import Header from '../../../../components/Header';
-import StatusBadge from '../../../../components/StatusBadge';
-import LoadingSpinner from '../../../../components/LoadingSpinner';
-import { formatDateTime } from '../../../../lib/utils';
-import { FiMessageCircle } from 'react-icons/fi';
-import { toast } from 'react-toastify';
-import { useAuth } from '../../../../context/AuthContext';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import ChatBox from '@/components/ChatBox';
 
 export default function TicketDetailPage() {
   const params = useParams();
-  const { isCustomer } = useAuth();
+  const router = useRouter();
+  const ticketId = params.id;
+
   const [ticket, setTicket] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [newStatus, setNewStatus] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (params.id) fetchTicket();
-  }, [params.id]);
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          router.push('/login');
+          return;
+        }
 
-  const fetchTicket = async () => {
-    try {
-      const response = await api.get(`/tickets/${params.id}`);
-      setTicket(response.data.data);
-      setNewStatus(response.data.data.status);
-    } catch (error) {
-      toast.error('Failed to fetch ticket');
-    } finally {
-      setLoading(false);
-    }
-  };
+        // جلب بيانات المستخدم الحالي
+        const userRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setCurrentUser(userRes.data);
 
-  const handleStatusUpdate = async () => {
-    try {
-      await api.put(`/tickets/${params.id}`, { status: newStatus });
-      toast.success('Status updated');
-      fetchTicket();
-    } catch (error) {
-      toast.error('Failed to update');
-    }
-  };
+        // جلب بيانات التذكرة
+        const ticketRes = await axios.get(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setTicket(ticketRes.data);
 
-  if (loading) return <LoadingSpinner />;
-  if (!ticket) return null;
+      } catch (error) {
+        console.error('خطأ في جلب البيانات:', error);
+        toast.error('فشل تحميل التذكرة');
+        router.push('/dashboard/tickets');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [ticketId, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-xl">جاري التحميل...</div>
+      </div>
+    );
+  }
+
+  if (!ticket) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-xl text-red-600">التذكرة غير موجودة</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen">
-      <Header title="Ticket Details" />
-      <div className="p-6 max-w-5xl mx-auto">
-        <div className="bg-white rounded-xl shadow-md p-8">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h1 className="text-2xl font-bold mb-2">{ticket.title}</h1>
-              <div className="flex gap-3">
-                <StatusBadge status={ticket.status} />
-                <span className="badge bg-blue-100 text-blue-800">{ticket.priority}</span>
-              </div>
-            </div>
-            <Link href={`/dashboard/tickets/${params.id}/chat`} className="btn btn-primary flex items-center gap-2">
-              <FiMessageCircle /> View Chat
-            </Link>
-          </div>
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium text-gray-500 mb-2">Description</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">{ticket.description}</p>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="font-medium text-gray-500 mb-1">Customer</h3>
-                <p>{ticket.customer?.name}</p>
-                <p className="text-sm text-gray-500">{ticket.customer?.email}</p>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-500 mb-1">Created</h3>
-                <p>{formatDateTime(ticket.createdAt)}</p>
-              </div>
-            </div>
-            {!isCustomer() && (
-              <div className="pt-4 border-t">
-                <h3 className="font-medium mb-2">Update Status</h3>
-                <div className="flex gap-4">
-                  <select value={newStatus} onChange={(e) => setNewStatus(e.target.value)} className="input flex-1">
-                    <option value="open">Open</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="resolved">Resolved</option>
-                    <option value="closed">Closed</option>
-                  </select>
-                  <button onClick={handleStatusUpdate} className="btn btn-primary" disabled={newStatus === ticket.status}>
-                    Update
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+    <div className="container mx-auto px-4 py-8 max-w-4xl">
+      {/* تفاصيل التذكرة */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="flex justify-between items-start mb-4">
+          <h1 className="text-2xl font-bold text-gray-800">{ticket.title}</h1>
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+            ticket.status === 'open' ? 'bg-green-100 text-green-800' :
+            ticket.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+            ticket.status === 'closed' ? 'bg-gray-100 text-gray-800' :
+            'bg-blue-100 text-blue-800'
+          }`}>
+            {ticket.status}
+          </span>
         </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+          <div>
+            <span className="text-gray-600">الأولوية:</span>
+            <span className="font-semibold mr-2">{ticket.priority}</span>
+          </div>
+          <div>
+            <span className="text-gray-600">القسم:</span>
+            <span className="font-semibold mr-2">{ticket.category}</span>
+          </div>
+          <div>
+            <span className="text-gray-600">تاريخ الإنشاء:</span>
+            <span className="font-semibold mr-2">
+              {new Date(ticket.createdAt).toLocaleDateString('ar-SA')}
+            </span>
+          </div>
+          {ticket.assignedTo && (
+            <div>
+              <span className="text-gray-600">مسند إلى:</span>
+              <span className="font-semibold mr-2">{ticket.assignedTo.name}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="border-t pt-4">
+          <h3 className="font-semibold text-gray-700 mb-2">الوصف:</h3>
+          <p className="text-gray-600 whitespace-pre-wrap">{ticket.description}</p>
+        </div>
+
+        {ticket.attachments && ticket.attachments.length > 0 && (
+          <div className="border-t pt-4 mt-4">
+            <h3 className="font-semibold text-gray-700 mb-2">المرفقات:</h3>
+            <div className="flex flex-wrap gap-2">
+              {ticket.attachments.map((file, index) => (
+                
+                  key={index}
+                  href={`${process.env.NEXT_PUBLIC_API_URL}${file}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline text-sm"
+                >
+                  📎 ملف {index + 1}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* صندوق الشات */}
+      <ChatBox ticketId={ticketId} currentUser={currentUser} />
     </div>
   );
 }
