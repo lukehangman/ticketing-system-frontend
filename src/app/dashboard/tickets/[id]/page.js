@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import ChatBox from '@/components/ChatBox';
 
 export default function TicketDetailPage() {
@@ -19,27 +19,21 @@ export default function TicketDetailPage() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        
+
         if (!token) {
           router.push('/login');
           return;
         }
 
-        // جلب بيانات المستخدم الحالي
         const userRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         setCurrentUser(userRes.data);
 
-        // جلب بيانات التذكرة
         const ticketRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         setTicket(ticketRes.data);
 
@@ -73,16 +67,23 @@ export default function TicketDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
+      
       {/* تفاصيل التذكرة */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        
         <div className="flex justify-between items-start mb-4">
           <h1 className="text-2xl font-bold text-gray-800">{ticket.title}</h1>
-          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-            ticket.status === 'open' ? 'bg-green-100 text-green-800' :
-            ticket.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-            ticket.status === 'closed' ? 'bg-gray-100 text-gray-800' :
-            'bg-blue-100 text-blue-800'
-          }`}>
+          <span
+            className={`px-3 py-1 rounded-full text-sm font-semibold ${
+              ticket.status === 'open'
+                ? 'bg-green-100 text-green-800'
+                : ticket.status === 'pending'
+                ? 'bg-yellow-100 text-yellow-800'
+                : ticket.status === 'closed'
+                ? 'bg-gray-100 text-gray-800'
+                : 'bg-blue-100 text-blue-800'
+            }`}
+          >
             {ticket.status}
           </span>
         </div>
@@ -92,16 +93,19 @@ export default function TicketDetailPage() {
             <span className="text-gray-600">الأولوية:</span>
             <span className="font-semibold mr-2">{ticket.priority}</span>
           </div>
+
           <div>
             <span className="text-gray-600">القسم:</span>
             <span className="font-semibold mr-2">{ticket.category}</span>
           </div>
+
           <div>
             <span className="text-gray-600">تاريخ الإنشاء:</span>
             <span className="font-semibold mr-2">
               {new Date(ticket.createdAt).toLocaleDateString('ar-SA')}
             </span>
           </div>
+
           {ticket.assignedTo && (
             <div>
               <span className="text-gray-600">مسند إلى:</span>
@@ -110,17 +114,19 @@ export default function TicketDetailPage() {
           )}
         </div>
 
+        {/* الوصف */}
         <div className="border-t pt-4">
           <h3 className="font-semibold text-gray-700 mb-2">الوصف:</h3>
           <p className="text-gray-600 whitespace-pre-wrap">{ticket.description}</p>
         </div>
 
+        {/* المرفقات */}
         {ticket.attachments && ticket.attachments.length > 0 && (
           <div className="border-t pt-4 mt-4">
             <h3 className="font-semibold text-gray-700 mb-2">المرفقات:</h3>
             <div className="flex flex-wrap gap-2">
               {ticket.attachments.map((file, index) => (
-                
+                <a
                   key={index}
                   href={`${process.env.NEXT_PUBLIC_API_URL}${file}`}
                   target="_blank"
