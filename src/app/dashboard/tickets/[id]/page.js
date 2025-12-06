@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import ChatBox from '@/components/ui/ChatBox'; // ← ← الحل الأساسي هنا
+import ChatBox from '@/components/ChatBox'; // ← ← الحل الأساسي هنا
 
 export default function TicketDetailPage() {
   const params = useParams();
