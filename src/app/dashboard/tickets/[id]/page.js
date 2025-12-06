@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import ChatBox from '@/components/ChatBox'; // ← ← الحل الأساسي هنا
+import ChatBox from '@/components/ui/ChatBox'; // ← ← تم إصلاح المسار هنا
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -25,15 +25,21 @@ export default function TicketDetailPage() {
           return;
         }
 
+        // بيانات المستخدم
         const userRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
         );
         setCurrentUser(userRes.data);
 
+        // بيانات التذكرة
         const ticketRes = await axios.get(
           `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
         );
         setTicket(ticketRes.data);
 
@@ -67,7 +73,8 @@ export default function TicketDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-
+      
+      {/* تفاصيل التذكرة */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         
         <div className="flex justify-between items-start mb-4">
@@ -113,11 +120,15 @@ export default function TicketDetailPage() {
           )}
         </div>
 
+        {/* الوصف */}
         <div className="border-t pt-4">
           <h3 className="font-semibold text-gray-700 mb-2">الوصف:</h3>
-          <p className="text-gray-600 whitespace-pre-wrap">{ticket.description}</p>
+          <p className="text-gray-600 whitespace-pre-wrap">
+            {ticket.description}
+          </p>
         </div>
 
+        {/* المرفقات */}
         {ticket.attachments && ticket.attachments.length > 0 && (
           <div className="border-t pt-4 mt-4">
             <h3 className="font-semibold text-gray-700 mb-2">المرفقات:</h3>
@@ -138,6 +149,7 @@ export default function TicketDetailPage() {
         )}
       </div>
 
+      {/* صندوق الشات */}
       <ChatBox ticketId={ticketId} currentUser={currentUser} />
     </div>
   );
