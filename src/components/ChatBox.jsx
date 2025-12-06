@@ -12,6 +12,7 @@ export default function ChatBox({ ticketId, currentUser }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -20,12 +21,12 @@ export default function ChatBox({ ticketId, currentUser }) {
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
+
       const { data } = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/messages`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
+
       setMessages(data.messages || []);
     } catch (error) {
       console.error('خطأ في جلب الرسائل:', error);
@@ -40,7 +41,7 @@ export default function ChatBox({ ticketId, currentUser }) {
   // إرسال رسالة
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    
+
     if (!newMessage.trim() && !selectedFile) {
       toast.error('اكتب رسالة أو ارفع ملف');
       return;
@@ -51,7 +52,7 @@ export default function ChatBox({ ticketId, currentUser }) {
       const token = localStorage.getItem('token');
       let attachments = [];
 
-      // لو فيه ملف، نرفعه أول
+      // رفع ملف إذا موجود
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -60,10 +61,10 @@ export default function ChatBox({ ticketId, currentUser }) {
           `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/messages/upload`,
           formData,
           {
-            headers: { 
+            headers: {
               Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
+              'Content-Type': 'multipart/form-data',
+            },
           }
         );
 
@@ -75,19 +76,16 @@ export default function ChatBox({ ticketId, currentUser }) {
         `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/messages`,
         {
           message: newMessage.trim(),
-          attachments
+          attachments,
         },
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // إضافة الرسالة للقائمة
-      setMessages(prev => [...prev, data.message]);
+      setMessages((prev) => [...prev, data.message]);
       setNewMessage('');
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
-      
+
       toast.success('تم إرسال الرسالة');
     } catch (error) {
       console.error('خطأ في إرسال الرسالة:', error);
@@ -97,14 +95,14 @@ export default function ChatBox({ ticketId, currentUser }) {
     }
   };
 
-  // التحديث التلقائي كل 5 ثواني
+  // تحديث الرسائل كل 5 ثواني
   useEffect(() => {
     fetchMessages();
     const interval = setInterval(fetchMessages, 5000);
     return () => clearInterval(interval);
   }, [ticketId]);
 
-  // السكرول للأسفل عند إضافة رسالة
+  // السكروول للأسفل تلقائي
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -122,7 +120,7 @@ export default function ChatBox({ ticketId, currentUser }) {
         ) : (
           messages.map((msg) => {
             const isCurrentUser = msg.sender._id === currentUser?._id;
-            
+
             return (
               <div
                 key={msg._id}
@@ -137,13 +135,21 @@ export default function ChatBox({ ticketId, currentUser }) {
                 >
                   {/* اسم المرسل والوقت */}
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-sm font-semibold ${isCurrentUser ? 'text-blue-100' : 'text-gray-700'}`}>
+                    <span
+                      className={`text-sm font-semibold ${
+                        isCurrentUser ? 'text-blue-100' : 'text-gray-700'
+                      }`}
+                    >
                       {msg.sender.name}
                     </span>
-                    <span className={`text-xs ${isCurrentUser ? 'text-blue-200' : 'text-gray-400'}`}>
-                      {formatDistanceToNow(new Date(msg.createdAt), { 
-                        addSuffix: true, 
-                        locale: ar 
+                    <span
+                      className={`text-xs ${
+                        isCurrentUser ? 'text-blue-200' : 'text-gray-400'
+                      }`}
+                    >
+                      {formatDistanceToNow(new Date(msg.createdAt), {
+                        addSuffix: true,
+                        locale: ar,
                       })}
                     </span>
                   </div>
@@ -157,7 +163,7 @@ export default function ChatBox({ ticketId, currentUser }) {
                   {msg.attachments && msg.attachments.length > 0 && (
                     <div className="mt-2">
                       {msg.attachments.map((file, index) => (
-                        
+                        <a
                           key={index}
                           href={`${process.env.NEXT_PUBLIC_API_URL}${file}`}
                           target="_blank"
@@ -179,7 +185,7 @@ export default function ChatBox({ ticketId, currentUser }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* فورم إرسال الرسالة */}
+      {/* الفورم */}
       <form onSubmit={handleSendMessage} className="flex gap-2">
         <div className="flex-1">
           <textarea
@@ -190,7 +196,7 @@ export default function ChatBox({ ticketId, currentUser }) {
             rows={2}
             disabled={isSending}
           />
-          
+
           {/* رفع ملف */}
           <div className="mt-2">
             <input
@@ -200,6 +206,7 @@ export default function ChatBox({ ticketId, currentUser }) {
               className="text-sm text-gray-600"
               disabled={isSending}
             />
+
             {selectedFile && (
               <span className="text-xs text-green-600 block mt-1">
                 ✓ تم اختيار: {selectedFile.name}
