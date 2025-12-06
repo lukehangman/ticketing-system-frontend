@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import ChatBox from '@/components/ChatBox';  // ← ← تم إصلاح المسار هنا
+
+// المسار الصحيح 100٪ لملف ChatBox
+import ChatBox from '../../../../components/ChatBox';
 
 export default function TicketDetailPage() {
   const params = useParams();
@@ -73,12 +75,12 @@ export default function TicketDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
-      
+
       {/* تفاصيل التذكرة */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        
         <div className="flex justify-between items-start mb-4">
           <h1 className="text-2xl font-bold text-gray-800">{ticket.title}</h1>
+
           <span
             className={`px-3 py-1 rounded-full text-sm font-semibold ${
               ticket.status === 'open'
@@ -115,7 +117,9 @@ export default function TicketDetailPage() {
           {ticket.assignedTo && (
             <div>
               <span className="text-gray-600">مسند إلى:</span>
-              <span className="font-semibold mr-2">{ticket.assignedTo.name}</span>
+              <span className="font-semibold mr-2">
+                {ticket.assignedTo.name}
+              </span>
             </div>
           )}
         </div>
@@ -149,7 +153,7 @@ export default function TicketDetailPage() {
         )}
       </div>
 
-      {/* صندوق الشات */}
+      {/* صندوق المحادثة */}
       <ChatBox ticketId={ticketId} currentUser={currentUser} />
     </div>
   );
