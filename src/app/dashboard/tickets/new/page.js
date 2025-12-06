@@ -3,38 +3,37 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 export default function NewTicketPage() {
   const router = useRouter();
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     category: 'technical',
-    priority: 'medium'
+    priority: 'medium',
   });
-  
+
   const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleFileChange = (e) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles(selectedFiles);
+    const selected = Array.from(e.target.files || []);
+    setFiles(selected);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // التحقق من البيانات
     if (!formData.title.trim()) {
       toast.error('العنوان مطلوب');
       return;
@@ -54,37 +53,33 @@ export default function NewTicketPage() {
         return;
       }
 
-      // إنشاء FormData لإرسال الملفات
-      const formDataToSend = new FormData();
-      formDataToSend.append('title', formData.title.trim());
-      formDataToSend.append('description', formData.description.trim());
-      formDataToSend.append('category', formData.category);
-      formDataToSend.append('priority', formData.priority);
+      // FormData
+      const fd = new FormData();
+      fd.append('title', formData.title.trim());
+      fd.append('description', formData.description.trim());
+      fd.append('category', formData.category);
+      fd.append('priority', formData.priority);
 
-      // إضافة الملفات
       files.forEach((file) => {
-        formDataToSend.append('attachments', file);
+        fd.append('attachments', file);
       });
 
-      // إرسال الطلب
       const { data } = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/tickets`,
-        formDataToSend,
+        fd,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         }
       );
 
       toast.success('تم إنشاء التذكرة بنجاح');
       router.push(`/dashboard/tickets/${data.ticket._id}`);
-
     } catch (error) {
-      console.error('خطأ في إنشاء التذكرة:', error);
-      const errorMsg = error.response?.data?.message || 'فشل إنشاء التذكرة';
-      toast.error(errorMsg);
+      console.error(error);
+      toast.error(error.response?.data?.message || 'فشل إنشاء التذكرة');
     } finally {
       setIsSubmitting(false);
     }
@@ -106,7 +101,8 @@ export default function NewTicketPage() {
               name="title"
               value={formData.title}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 
+              focus:ring-blue-500 focus:border-transparent"
               placeholder="اكتب عنوان التذكرة"
               disabled={isSubmitting}
               required
@@ -122,7 +118,8 @@ export default function NewTicketPage() {
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg p-3 
+              focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isSubmitting}
               required
             >
@@ -142,7 +139,8 @@ export default function NewTicketPage() {
               name="priority"
               value={formData.priority}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full border border-gray-300 rounded-lg p-3 
+              focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               disabled={isSubmitting}
               required
             >
@@ -162,7 +160,8 @@ export default function NewTicketPage() {
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              className="w-full border border-gray-300 rounded-lg p-3 
+              focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               placeholder="اشرح المشكلة بالتفصيل"
               rows={6}
               disabled={isSubmitting}
@@ -183,6 +182,7 @@ export default function NewTicketPage() {
               disabled={isSubmitting}
               accept="image/*,.pdf,.doc,.docx"
             />
+
             {files.length > 0 && (
               <div className="mt-2 text-sm text-gray-600">
                 تم اختيار {files.length} ملف
@@ -195,7 +195,8 @@ export default function NewTicketPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold"
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 
+              disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-semibold"
             >
               {isSubmitting ? 'جاري الإنشاء...' : 'إنشاء التذكرة'}
             </button>
