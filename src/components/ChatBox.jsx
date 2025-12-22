@@ -1,51 +1,77 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { toast } from 'react-toastify';
 import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
-import api from '../lib/api';
+import { ar, enUS } from 'date-fns/locale';
+import { useI18n } from '../context/I18nContext';
 
 export default function ChatBox({ ticketId, currentUser }) {
+  const { language, t } = useI18n();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // جلب الرسائل
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
+  const currentUserId = currentUser?._id || currentUser?.id;
+  const locale = language === 'ar' ? ar : enUS;
+
+  const getAuthHeaders = () => {
+    if (typeof window === 'undefined') return {};
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  // Fetch messages
   const fetchMessages = async () => {
+    if (!apiBaseUrl) {
+      toast.error(t('errors.apiUrl'));
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const { data } = await api.get(`/messages/${ticketId}`);
+      const { data } = await axios.get(`${apiBaseUrl}/messages/${ticketId}`, {
+        headers: getAuthHeaders(),
+      });
       setMessages(data.messages || []);
     } catch (error) {
-      console.error('خطأ في جلب الرسائل:', error);
+      console.error('Error fetching messages:', error);
       if (error.response?.status === 403) {
-        toast.error('غير مصرح لك بالوصول لهذه المحادثة');
+        toast.error(t('errors.notAuthorized'));
+      } else {
+        toast.error(t('errors.fetchMessages'));
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // إرسال رسالة
+  // Send message
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
     if (!newMessage.trim()) {
-      toast.error('اكتب رسالة أو ارفع ملف');
+      return;
+    }
+
+    if (!apiBaseUrl) {
+      toast.error(t('errors.apiUrl'));
       return;
     }
 
     try {
       setIsSending(true);
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
 
-      // رفع ملف إذا موجود
-            // إرسال الرسالة
-      const { data } = await api.post(`/messages/${ticketId}`, {
-        message: newMessage.trim(),
-      });
+      const { data } = await axios.post(
+        `${apiBaseUrl}/messages/${ticketId}`,
+        { message: newMessage.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       const createdMessage = data.messages?.[0];
       if (createdMessage) {
@@ -53,40 +79,39 @@ export default function ChatBox({ ticketId, currentUser }) {
       }
       setNewMessage('');
 
-      toast.success('تم إرسال الرسالة');
+      toast.success(t('chat.sent'));
     } catch (error) {
-      console.error('خطأ في إرسال الرسالة:', error);
-      toast.error('فشل إرسال الرسالة');
+      console.error('Error sending message:', error);
+      toast.error(t('errors.sendMessage'));
     } finally {
       setIsSending(false);
     }
   };
 
-  // تحديث الرسائل كل 5 ثواني
   useEffect(() => {
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
-    return () => clearInterval(interval);
+    if (ticketId) {
+      fetchMessages();
+      const interval = setInterval(fetchMessages, 5000);
+      return () => clearInterval(interval);
+    }
   }, [ticketId]);
 
-  // السكروول للأسفل تلقائي
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-      <h2 className="text-xl font-bold mb-4 text-gray-800">المحادثة</h2>
+    <div className="bg-white rounded-lg shadow-md p-6 mt-6 dark:bg-gray-800">
+      <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">{t('chat.title')}</h2>
 
-      {/* قائمة الرسائل */}
-      <div className="border rounded-lg p-4 h-96 overflow-y-auto bg-gray-50 mb-4">
+      <div className="border rounded-lg p-4 h-96 overflow-y-auto bg-gray-50 mb-4 dark:bg-gray-900/40 dark:border-gray-700">
         {isLoading && messages.length === 0 ? (
-          <div className="text-center text-gray-500">جاري التحميل...</div>
+          <div className="text-center text-gray-500 dark:text-gray-300">{t('chat.loading')}</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-gray-500">لا توجد رسائل بعد</div>
+          <div className="text-center text-gray-500 dark:text-gray-300">{t('chat.noMessages')}</div>
         ) : (
           messages.map((msg) => {
-            const isCurrentUser = msg.sender._id === currentUser?._id;
+            const isCurrentUser = msg.sender?._id === currentUserId;
 
             return (
               <div
@@ -97,17 +122,16 @@ export default function ChatBox({ ticketId, currentUser }) {
                   className={`max-w-[70%] rounded-lg p-3 ${
                     isCurrentUser
                       ? 'bg-blue-500 text-white'
-                      : 'bg-white border border-gray-200'
+                      : 'bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700'
                   }`}
                 >
-                  {/* اسم المرسل والوقت */}
                   <div className="flex items-center gap-2 mb-1">
                     <span
                       className={`text-sm font-semibold ${
-                        isCurrentUser ? 'text-blue-100' : 'text-gray-700'
+                        isCurrentUser ? 'text-blue-100' : 'text-gray-700 dark:text-gray-200'
                       }`}
                     >
-                      {msg.sender.name}
+                      {msg.sender?.name || t('chat.unknown')}
                     </span>
                     <span
                       className={`text-xs ${
@@ -116,34 +140,14 @@ export default function ChatBox({ ticketId, currentUser }) {
                     >
                       {formatDistanceToNow(new Date(msg.createdAt), {
                         addSuffix: true,
-                        locale: ar,
+                        locale,
                       })}
                     </span>
                   </div>
 
-                  {/* نص الرسالة */}
-                  <p className={`text-sm ${isCurrentUser ? 'text-white' : 'text-gray-800'}`}>
+                  <p className={`text-sm ${isCurrentUser ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`}>
                     {msg.message}
                   </p>
-
-                  {/* المرفقات */}
-                  {msg.attachments && msg.attachments.length > 0 && (
-                    <div className="mt-2">
-                      {msg.attachments.map((file, index) => (
-                        <a
-                          key={index}
-                          href={`${process.env.NEXT_PUBLIC_API_URL}${file}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`text-xs underline block ${
-                            isCurrentUser ? 'text-blue-100' : 'text-blue-600'
-                          }`}
-                        >
-                          dY"Z U.U,U? U.OñU?U, {index + 1}
-                        </a>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             );
@@ -152,14 +156,13 @@ export default function ChatBox({ ticketId, currentUser }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* الفورم */}
       <form onSubmit={handleSendMessage} className="flex gap-2">
         <div className="flex-1">
           <textarea
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="اكتب رسالتك هنا..."
-            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            placeholder={t('chat.placeholder')}
+            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
             rows={2}
             disabled={isSending}
           />
@@ -170,17 +173,9 @@ export default function ChatBox({ ticketId, currentUser }) {
           disabled={isSending || !newMessage.trim()}
           className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors h-fit"
         >
-          {isSending ? 'جاري الإرسال...' : 'إرسال'}
+          {isSending ? t('chat.sending') : t('chat.send')}
         </button>
       </form>
     </div>
   );
 }
-
-
-
-
-
-
-
-

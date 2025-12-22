@@ -1,13 +1,9 @@
 import axios from "axios";
 
 // ===== BASE URL SETUP =====
-// If NEXT_PUBLIC_API_URL exists → use it
-// Else fallback to localhost (dev)
+// Always rely on NEXT_PUBLIC_API_URL (no localhost fallback)
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
-  "http://localhost:8000/api";
-
-console.log("API Base URL →", API_BASE_URL);
+  process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") || "";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
