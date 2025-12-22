@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '../../../../lib/api';
 import { toast } from 'react-toastify';
 
 export default function NewTicketPage() {
@@ -15,7 +15,6 @@ export default function NewTicketPage() {
     priority: 'medium',
   });
 
-  const [files, setFiles] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -24,11 +23,6 @@ export default function NewTicketPage() {
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleFileChange = (e) => {
-    const selected = Array.from(e.target.files || []);
-    setFiles(selected);
   };
 
   const handleSubmit = async (e) => {
@@ -45,37 +39,15 @@ export default function NewTicketPage() {
 
     try {
       setIsSubmitting(true);
-      const token = localStorage.getItem('token');
-
-      if (!token) {
-        toast.error('يجب تسجيل الدخول أولاً');
-        router.push('/login');
-        return;
-      }
-
-      const fd = new FormData();
-      fd.append('title', formData.title.trim());
-      fd.append('description', formData.description.trim());
-      fd.append('category', formData.category);
-      fd.append('priority', formData.priority);
-
-      files.forEach((file) => {
-        fd.append('attachments', file);
+      const { data } = await api.post('/tickets', {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        category: formData.category,
+        priority: formData.priority,
       });
 
-      const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets`,
-        fd,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      toast.success('تم إنشاء التذكرة بنجاح');
-      router.push(`/dashboard/tickets/${data.ticket._id}`);
+      toast.success('Ticket created successfully');
+      router.push(`/dashboard/tickets/${data.data._id}`);
     } catch (error) {
       console.error(error);
       toast.error(error.response?.data?.message || 'فشل إنشاء التذكرة');
@@ -168,26 +140,6 @@ export default function NewTicketPage() {
             />
           </div>
 
-          {/* المرفقات */}
-          <div>
-            <label className="block text-gray-700 font-semibold mb-2">
-              المرفقات (اختياري)
-            </label>
-            <input
-              type="file"
-              onChange={handleFileChange}
-              className="w-full border border-gray-300 rounded-lg p-3"
-              multiple
-              disabled={isSubmitting}
-              accept="image/*,.pdf,.doc,.docx"
-            />
-
-            {files.length > 0 && (
-              <div className="mt-2 text-sm text-gray-600">
-                تم اختيار {files.length} ملف
-              </div>
-            )}
-          </div>
 
           {/* أزرار الإرسال */}
           <div className="flex gap-3 pt-4">
@@ -213,3 +165,6 @@ export default function NewTicketPage() {
     </div>
   );
 }
+
+
+

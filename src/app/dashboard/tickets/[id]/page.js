@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import axios from 'axios';
+import api from '../../../../lib/api';
 import { toast } from 'react-toastify';
 
 // المسار الصحيح 100٪ لملف ChatBox
@@ -20,30 +20,12 @@ export default function TicketDetailPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        // بيانات المستخدم
-        const userRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/users/me`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-        setCurrentUser(userRes.data);
+        const userRes = await api.get('/auth/me');
+        setCurrentUser(userRes.data.data);
 
         // بيانات التذكرة
-        const ticketRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}`,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
-        );
-        setTicket(ticketRes.data);
+        const ticketRes = await api.get(`/tickets/${ticketId}`);
+        setTicket(ticketRes.data.data);
 
       } catch (error) {
         console.error('خطأ في جلب البيانات:', error);
@@ -158,3 +140,4 @@ export default function TicketDetailPage() {
     </div>
   );
 }
+

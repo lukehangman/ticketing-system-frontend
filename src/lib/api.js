@@ -5,7 +5,7 @@ import axios from "axios";
 // Else fallback to localhost (dev)
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, "") ||
-  "http://localhost:5000/api";
+  "http://localhost:8000/api";
 
 console.log("API Base URL →", API_BASE_URL);
 

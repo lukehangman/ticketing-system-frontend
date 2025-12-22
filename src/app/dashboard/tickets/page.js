@@ -97,7 +97,7 @@ export default function TicketsPage() {
             </select>
           </div>
 
-          {isCustomer() && (
+          {isCustomer && (
             <Link href="/dashboard/tickets/new" className="btn btn-primary flex items-center gap-2">
               <FiPlus />
               <span>New Ticket</span>

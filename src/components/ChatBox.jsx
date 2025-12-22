@@ -1,32 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import api from '../lib/api';
 
 export default function ChatBox({ ticketId, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
-
   const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
 
   // جلب الرسائل
   const fetchMessages = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-
-      const { data } = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/messages`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
+      const { data } = await api.get(`/messages/${ticketId}`);
       setMessages(data.messages || []);
     } catch (error) {
       console.error('خطأ في جلب الرسائل:', error);
@@ -42,49 +33,25 @@ export default function ChatBox({ ticketId, currentUser }) {
   const handleSendMessage = async (e) => {
     e.preventDefault();
 
-    if (!newMessage.trim() && !selectedFile) {
+    if (!newMessage.trim()) {
       toast.error('اكتب رسالة أو ارفع ملف');
       return;
     }
 
     try {
       setIsSending(true);
-      const token = localStorage.getItem('token');
-      let attachments = [];
 
       // رفع ملف إذا موجود
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append('file', selectedFile);
+            // إرسال الرسالة
+      const { data } = await api.post(`/messages/${ticketId}`, {
+        message: newMessage.trim(),
+      });
 
-        const uploadRes = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/messages/upload`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-
-        attachments.push(uploadRes.data.fileUrl);
+      const createdMessage = data.messages?.[0];
+      if (createdMessage) {
+        setMessages((prev) => [...prev, createdMessage]);
       }
-
-      // إرسال الرسالة
-      const { data } = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/tickets/${ticketId}/messages`,
-        {
-          message: newMessage.trim(),
-          attachments,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setMessages((prev) => [...prev, data.message]);
       setNewMessage('');
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
 
       toast.success('تم إرسال الرسالة');
     } catch (error) {
@@ -172,7 +139,7 @@ export default function ChatBox({ ticketId, currentUser }) {
                             isCurrentUser ? 'text-blue-100' : 'text-blue-600'
                           }`}
                         >
-                          📎 ملف مرفق {index + 1}
+                          dY"Z U.U,U? U.OñU?U, {index + 1}
                         </a>
                       ))}
                     </div>
@@ -196,28 +163,11 @@ export default function ChatBox({ ticketId, currentUser }) {
             rows={2}
             disabled={isSending}
           />
-
-          {/* رفع ملف */}
-          <div className="mt-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              className="text-sm text-gray-600"
-              disabled={isSending}
-            />
-
-            {selectedFile && (
-              <span className="text-xs text-green-600 block mt-1">
-                ✓ تم اختيار: {selectedFile.name}
-              </span>
-            )}
-          </div>
         </div>
 
         <button
           type="submit"
-          disabled={isSending || (!newMessage.trim() && !selectedFile)}
+          disabled={isSending || !newMessage.trim()}
           className="bg-blue-600 text-white px-6 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors h-fit"
         >
           {isSending ? 'جاري الإرسال...' : 'إرسال'}
@@ -226,3 +176,11 @@ export default function ChatBox({ ticketId, currentUser }) {
     </div>
   );
 }
+
+
+
+
+
+
+
+

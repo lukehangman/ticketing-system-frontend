@@ -28,8 +28,8 @@ export default function TicketChatPage() {
 
   const fetchMessages = async () => {
     try {
-      const response = await api.get(`/tickets/${params.id}/messages`);
-      setMessages(response.data.data);
+      const response = await api.get(`/messages/${params.id}`);
+      setMessages(response.data.messages || []);
     } catch (error) {
       toast.error('Failed to fetch messages');
     } finally {
@@ -43,7 +43,7 @@ export default function TicketChatPage() {
 
     setSending(true);
     try {
-      await api.post(`/tickets/${params.id}/messages`, { message: newMessage });
+      await api.post(`/messages/${params.id}`, { message: newMessage });
       setNewMessage('');
       fetchMessages();
     } catch (error) {
